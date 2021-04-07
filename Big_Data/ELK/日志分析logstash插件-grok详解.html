@@ -1,0 +1,70 @@
+<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-42b550b4-b648-4a8f-9ebe-22f72b770ebd"></attachment><p>一般系统或服务生成的日志都是一大长串。每个字段之间用空格隔开。logstash在获取日志是整个一串获取，如果把日志中每个字段代表的意思分割开来在传给elasticsearch。这样呈现出来的数据更加清晰，而且也能让kibana更方便的绘制图形。</p><p>&nbsp;&nbsp;Grok 是 Logstash 最重要的插件。它的主要作用就是将文本格式的字符串，转换成为具体的结构化的数据，配合正则表达式使用。</p><p><br></p><p><strong>	</strong></p><p><strong>grok表达式</strong></p><p>下面针对Apache日志来分割处理</p><p>	</p><pre class="ql-syntax" spellcheck="false">filter {
+  if [type] == "apache" {
+    grok {
+      match =&gt; ["message" =&gt; "%{IPORHOST:addre} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] \"%{WORD:http_method} %{NOTSPACE:request} HTTP/%{NUMBER:httpversion}\" %{NUMBER:status} (?:%{NUMBER:bytes}|-) \"(?:%{URI:http_referer}|-)\" \"%{GREEDYDATA:User_Agent}\""]
+      remove_field =&gt; ["message"]
+    }
+    date {
+      match =&gt; [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+    }
+  }
+}
+</pre><p>下面是apache日志</p><pre class="ql-syntax" spellcheck="false">192.168.10.97&nbsp;-&nbsp;-&nbsp;[19/Jul/2016:16:28:52&nbsp;+0800]&nbsp;"GET&nbsp;/&nbsp;HTTP/1.1"&nbsp;200&nbsp;23&nbsp;"-"&nbsp;"Mozilla/5.0&nbsp;(Windows&nbsp;NT&nbsp;6.1;&nbsp;WOW64)&nbsp;AppleWebKit/537.36&nbsp;(KHTML,&nbsp;like&nbsp;Gecko)&nbsp;Chrome/45.0.2454.101&nbsp;Safari/537.36"
+</pre><p>	</p><p>日志中每个字段之间空格隔开，分别对应message中的字段。</p><p>如：%{IPORHOST:addre}&nbsp;--&gt; 192.168.10.197&nbsp;</p><p><br></p><p>但问题是IPORHOST又不是正则表达式，怎么能匹配IP地址呢？</p><p>因为IPPRHOST是grok表达式，它代表的正则表达式如下：</p><pre class="ql-syntax" spellcheck="false">IPV6&nbsp;((([0-9A-Fa-f]{1,4}:){7}([0-9A-Fa-f]{1,4}|:))|(([0-9A-Fa-f]{1,4}:){6}(:[0-9A-Fa-f]{1,4}|((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){5}(((:[0-9A-Fa-f]{1,4}){1,2})|:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3})|:))|(([0-9A-Fa-f]{1,4}:){4}(((:[0-9A-Fa-f]{1,4}){1,3})|((:[0-9A-Fa-f]{1,4})?:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){3}(((:[0-9A-Fa-f]{1,4}){1,4})|((:[0-9A-Fa-f]{1,4}){0,2}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){2}(((:[0-9A-Fa-f]{1,4}){1,5})|((:[0-9A-Fa-f]{1,4}){0,3}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(([0-9A-Fa-f]{1,4}:){1}(((:[0-9A-Fa-f]{1,4}){1,6})|((:[0-9A-Fa-f]{1,4}){0,4}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:))|(:(((:[0-9A-Fa-f]{1,4}){1,7})|((:[0-9A-Fa-f]{1,4}){0,5}:((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)){3}))|:)))(%.+)?
+IPV4&nbsp;(?&lt;![0-9])(?:(?:[0-1]?[0-9]{1,2}|2[0-4][0-9]|25[0-5])[.](?:[0-1]?[0-9]{1,2}|2[0-4][0-9]|25[0-5])[.](?:[0-1]?[0-9]{1,2}|2[0-4][0-9]|25[0-5])[.](?:[0-1]?[0-9]{1,2}|2[0-4][0-9]|25[0-5]))(?![0-9])
+IP&nbsp;(?:%{IPV6}|%{IPV4})
+HOSTNAME&nbsp;\b(?:[0-9A-Za-z][0-9A-Za-z-]{0,62})(?:\.(?:[0-9A-Za-z][0-9A-Za-z-]{0,62}))*(\.?|\b)
+IPORHOST&nbsp;(?:%{IP}|%{HOSTNAME})
+</pre><p><br></p><p>IPORHOST代表的是ipv4或者ipv6或者HOSTNAME所匹配的grok表达式。</p><p>上面的IPORHOST有点复杂，我们来看看简单点的，如USER</p><p>USERNAME [a-zA-Z0-9._-]+&nbsp;&nbsp;&nbsp;</p><p><span style="color: rgb(0, 176, 80);">#USERNAME是匹配由字母，数字，“.”, "_", "-"组成的任意字符</span></p><p>USER %{USERNAME}</p><p><span style="color: rgb(0, 176, 80);">#USER代表USERNAME的正则表达式</span></p><p>第一行，用普通的正则表达式来定义一个 grok 表达式；</p><p>第二行，通过打印赋值格式，用前面定义好的 grok 表达式来定义另一个 grok 表达式。</p><p><br></p><p><strong>grok的语法：</strong></p><p><span style="color: rgb(0, 176, 240);">%{syntax:semantic}</span></p><p>syntax代表的是正则表达式替代字段，semantic是代表这个表达式对应的字段名，你可以自由命名。这个命名尽量能简单易懂的表达出这个字段代表的意思。</p><p><br></p><p>logstash安装时就带有已经写好的正则表达式。路径如下：</p><p>/usr/local/logstash-2.3.4/vendor/bundle/jruby/1.9/gems/logstash-patterns-core-2.0.5/patterns</p><p>或者直接访问https://github.com/elastic/logstash/blob/v1.4.2/patterns/grok-patterns</p><p>上面IPORHOST，USER等都是在里面已经定义好的！当然还有其他的，基本能满足我们的需求</p><p><br></p><p><strong>日志匹配</strong></p><p>当我们拿到一段日志，按照上面的grok表达式一个个去匹配时，我们如何确定我们匹配的是否正确呢？</p><p>http://grokdebug.herokuapp.com/ 这个地址可以满足我们的测试需求。就拿上面apache的日志测试。</p><p><a href="https://s5.51cto.com/wyfs02/M01/84/61/wKiom1ePFe3CrrREAABi3KIa6cs819.jpg" target="_blank" style="color: rgb(66, 133, 244);"><img src="https://s5.51cto.com/wyfs02/M01/84/61/wKiom1ePFe3CrrREAABi3KIa6cs819.jpg" alt="wKiom1ePFe3CrrREAABi3KIa6cs819.jpg"></a></p><p>点击后就出现如下数据，你写的每个grok表达式都获取到值了。为了测试准确，可以多测试几条日志。</p><pre class="ql-syntax" spellcheck="false">{
+&nbsp;&nbsp;"addre":&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"192.168.10.97"
+&nbsp;&nbsp;&nbsp;&nbsp;]
+&nbsp;&nbsp;],
+&nbsp;&nbsp;"HOSTNAME":&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"192.168.10.97",
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"192.168.10.175"
+&nbsp;&nbsp;&nbsp;&nbsp;]
+...........中间省略多行...........
+&nbsp;&nbsp;"http_referer":&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"http://192.168.10.175/"
+&nbsp;&nbsp;&nbsp;&nbsp;]
+&nbsp;&nbsp;],
+&nbsp;&nbsp;"URIPROTO":&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"http"
+&nbsp;&nbsp;&nbsp;&nbsp;]
+&nbsp;&nbsp;],
+&nbsp;&nbsp;"URIHOST":&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"192.168.10.175"
+&nbsp;&nbsp;&nbsp;&nbsp;]
+&nbsp;&nbsp;],
+&nbsp;&nbsp;"IPORHOST":&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"192.168.10.175"
+&nbsp;&nbsp;&nbsp;&nbsp;]
+&nbsp;&nbsp;],
+&nbsp;&nbsp;"User_Agent":&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;[
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"Mozilla/5.0&nbsp;(Windows&nbsp;NT&nbsp;6.1;&nbsp;WOW64)&nbsp;AppleWebKit/537.36&nbsp;(KHTML,&nbsp;like&nbsp;Gecko)&nbsp;Chrome/45.0.2454.101&nbsp;Safari/537.36"
+&nbsp;&nbsp;&nbsp;&nbsp;]
+&nbsp;&nbsp;]
+}
+</pre><p><br></p><p>每条日志总有些字段是没有数据显示，然后以“-”代替的。所有我们在匹配日志的时候也要判断。</p><p>如：(?:%{NUMBER:bytes}|-)&nbsp;</p><p>但是有些字符串是在太长，如：Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.101 Safari/537.36</p><p>我们可以使用%{GREEDYDATA browser}.&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</p><p>对应的grok表达式： GREEDYDATA&nbsp;.*&nbsp;&nbsp;</p><p><span style="color: rgb(0, 176, 80);">#GREEDYDATA表达式的意思能匹配任意字符串</span></p><p><br></p><p><br></p><p><strong>自定义grok表达式</strong></p><p>如果你感觉logstash自带的grok表达式不能满足需要，你也可以自己定义</p><p>如：</p><pre class="ql-syntax" spellcheck="false">filter {
+  if [type] == "apache" {
+    grok {
+      patterns_dir =&gt; "/usr/local/logstash-2.3.4/ownpatterns/patterns"
+      match =&gt; {
+                "message" =&gt; "%{APACHE_LOG}"
+                }
+      remove_field =&gt; ["message"]
+    }
+    date {
+      match =&gt; [ "timestamp", "dd/MMM/YYYY:HH:mm:ss Z" ]
+    }
+  }
+}
+</pre><p>patterns_dir为自定义的grok表达式的路径。</p><p>自定义的patterns中按照logstash自带的格式书写。</p><p>APACHE_LOG %{IPORHOST:addre} %{USER:ident} %{USER:auth} \[%{HTTPDATE:timestamp}\] \"%{WORD:http_method} %{NOTSPACE:request} HTTP/%{NUMBER:httpversion}\" %{NUMBER:status} (?:%{NUMBER:bytes}|-) \"(?:%{URI:http_referer}|-)\" \"%{GREEDYDATA:User_Agent}\"</p><p>我只是把apache日志匹配的grok表达式写入自定义文件中，简化conf文件。单个字段的正则表达式匹配你可以自己书写测试。</p><p>参考：https://www.elastic.co/guide/en/logstash/current/plugins-filters-grok.html</p><p><br></p>
