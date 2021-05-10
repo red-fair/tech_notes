@@ -1,0 +1,36 @@
+<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-47f9792f-7c82-44eb-9853-ff105a675084"></attachment><p>3，服务器环境调试；</p><p>发现没有装jdk，装上；、</p><p>防火墙先关闭；</p><p>selinux关闭；</p><p>4，zookeeper安装；</p><p>我把zookeeper的压缩文件放到了root目录下了，先到/opt目录下，然后：</p><p>执行：tar -zxvf /root/zookeeper-3.4.12.tar.gz 将文件解压；</p><p>执行：&nbsp;mv zookeeper-3.4.12 zookeeper 将文件重命名，主要是为了方便；</p><p>执行：&nbsp;cd /opt/zookeeper/conf 进入zookeeper的配置目录；</p><p>执行：mv zoo_sample.cfg zoo.cfg 将示例配置文件重命名；</p><p>执行：vi zoo.cfg 开始配置zookeeper，其实没什么需要改的，人家本来的配置就够用的了，如果说有需要的话，那就把允许的最大连接数改大，我改成了300，直接上配置文件，我这里是配置了三台zookeeper，如果多的话自己加上自己的机器就好，把文件中的地址改掉就好了：</p><p><span style="color: rgb(0, 0, 0);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><pre class="ql-syntax" spellcheck="false"># The number of milliseconds of each tick
+tickTime=2000
+# The number of ticks that the initial
+# synchronization phase can take
+initLimit=10
+# The number of ticks that can pass between
+# sending a request and getting an acknowledgement
+syncLimit=5
+# the directory where the snapshot is stored.
+# do not use /tmp for storage, /tmp here is just
+# example sakes.
+dataDir=/data1/zookeeper
+# the port at which the clients will connect
+clientPort=2181
+# the maximum number of client connections.
+# increase this if you need to handle more clients
+maxClientCnxns=300
+#
+# Be sure to read the maintenance section of the
+# administrator guide before turning on autopurge.
+#
+# http://zookeeper.apache.org/doc/current/zookeeperAdmin.html#sc_maintenance
+#
+# The number of snapshots to retain in dataDir
+#autopurge.snapRetainCount=3
+# Purge task interval in hours
+# Set to "0" to disable auto purge feature
+#autopurge.purgeInterval=1
+server.1=10.16.26.110:2888:3888
+
+server.2=10.16.26.116:2888:3888
+
+server.3=10.16.26.127:2888:3888
+</pre><p><span style="color: rgb(0, 0, 0);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><p>执行：mkdir /data1/zookeeper 先把zookeeper的文件目录创建出来；</p><p>执行：cd /data1/zookeeper 进入此目录；</p><p>执行：vi myid 创建一个叫myid的文件，此文件中用来表示本台机器的id是多少，放在咱们的集群里肯定就是1/2/3啦；</p><p>这样zookeeper就配置完了，按照此步骤把几台机器都配置好；</p><p>4，kafka参数配置；</p><p>新版本的kafka已经很好用了，不需要做 太多的配置；</p><p>示例配置如下：</p><pre class="ql-syntax" spellcheck="false">broker.id=0
+listeners=PLAINTEXT://10.16.26.110:9092
+</pre><p><br></p><p><br></p><p>5，kafka安装；</p><p>和zookeeper查不多，解压然后根据上一步的配置配置好就可以了；</p><p>6，zookeeper以及kafka启动；</p><p>zookeeper启动，进入zookeeper的bin目录下然后执行：./zkServer.sh start ;即可，然后其他两台也如此执行；</p><p>kakfa启动：进入kafka的bin目录执行：./kafka-server-start.sh&nbsp;-daemon ../config/server.properties &amp;</p><p><br></p>
