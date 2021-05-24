@@ -1,0 +1,8 @@
+<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-b6ab2138-1643-4f21-bdcc-80ac67d74327"></attachment><p>Use the&nbsp;<code style="background-color: rgb(248, 248, 248); color: rgb(85, 85, 85);">chkconfig</code>&nbsp;command to configure Elasticsearch to start automatically when the system boots up:</p><pre class="ql-syntax" spellcheck="false">sudo chkconfig --add elasticsearch
+</pre><p>Elasticsearch can be started and stopped using the&nbsp;<code style="background-color: rgb(248, 248, 248); color: rgb(85, 85, 85);">service</code>&nbsp;command:</p><pre class="ql-syntax" spellcheck="false">sudo -i service elasticsearch start
+sudo -i service elasticsearch stop
+</pre><p>If Elasticsearch fails to start for any reason, it will print the reason for failure to STDOUT. Log files can be found in&nbsp;<code style="background-color: rgb(248, 248, 248); color: rgb(85, 85, 85);">/var/log/elasticsearch/</code>.</p><h3>Running Elasticsearch with&nbsp;<code style="background-color: rgb(248, 248, 248); color: rgb(85, 85, 85);">systemd</code></h3><p><br></p><p>To configure Elasticsearch to start automatically when the system boots up, run the following commands:</p><pre class="ql-syntax" spellcheck="false">sudo /bin/systemctl daemon-reload
+sudo /bin/systemctl enable elasticsearch.service
+</pre><p>Elasticsearch can be started and stopped as follows:</p><pre class="ql-syntax" spellcheck="false">sudo systemctl start elasticsearch.service
+sudo systemctl stop elasticsearch.service
+</pre><p><br></p>
