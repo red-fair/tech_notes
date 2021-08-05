@@ -1,0 +1,108 @@
+<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-9c3e773c-faa1-437f-8100-e30671477fdd"></attachment><h1><a href="https://www.cnblogs.com/fat-girl-spring/p/14313006.html" target="_blank" style="color: rgb(106, 99, 82);">logstash的pipeline</a></h1><p>一个 logstash 实例中可以同时进行多个独立数据流程的处理工作，如下图所示。</p><p>而在这之前用户只能通过在单机运行多个 logstash 实例或者在配置文件中增加大量 if-else 条件判断语句来解决。要使用 multiple pipeline 也很简单，只需要将不同的 pipeline 在&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">config/pipeline.yml</code>中定义好即可，如下所示：</p><pre class="ql-syntax" spellcheck="false">- pipeline.id: apache
+  pipeline.batch.size: 125
+  queue.type: persisted
+  path.config: "/path/to/config/apache.cfg"
+- pipeline.id: nginx
+  path.config: "/path/to/config/nginx.cfg"
+</pre><p>其中&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">apache</code>和<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">nginx</code>作为独立的 pipeline 执行，而且配置也可以独立设置，互不干扰。<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">pipeline.yml</code>的引入极大地简化了 logstash 的配置管理工作，使得新手也可以很快完成复杂的 ETL 配置。</p><p>- `pipeline.workers`：设置启动多少个线程执行 fliter 和 output；当 input 的内容出现堆积而 CPU 使用率还比较充足时，可以考虑增加该参数的大小；</p><p>- `pipeline.batch.size`：设置单个工作线程在执行过滤器和输出之前收集的最大事件数，较大的批量大小通常更高效，但会增加内存开销。输出插件会将每个批处理作为一个输出单元。；例如，ES 输出会为收到的每个批次发出批量请求；调整 `pipeline.batch.size` 可调整发送到 ES 的批量请求（Bulk）的大小；</p><p>- `pipeline.batch.delay`：设置 Logstash 管道的延迟时间， 管道批处理延迟是 Logstash 在当前管道工作线程中接收事件后等待新消息的最长时间（以毫秒为单位）；简单来说，当 `pipeline.batch.size` 不满足时，会等待 `pipeline.batch.delay` 设置的时间，超时后便开始执行 filter 和 output 操作。</p><p>在 6.3 版本中，Logstash 又增加了&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">Pipeline-to-Pipeline</code>的管道机制（beta），即管道和管道之间可以连接在一起组成一个完成的数据处理流。熟悉 linux 的管道命令&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">|</code>的同学应该可以很快明白这种模式的好处。这无疑使得 Logstash 的配置会更加灵活，今天我们就来了解下这种灵活自由的配置方式。</p><h3>Pipeline-to-Pipeline配置</h3><p>修改&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">config/pipeline.yml</code>文件如下：</p><pre class="ql-syntax" spellcheck="false"> - pipeline.id: upstream
+   config.string: input { stdin {} } output { pipeline { send_to =&gt; [test_output] } }
+ - pipeline.id: downstream
+   config.string: input { pipeline { address =&gt; test_output } } output{ stdout{}}
+</pre><p>然后运行 logstash，其中&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">-r</code>&nbsp;表示配置文件有改动时自动重新加载，方便我们调试。</p><pre class="ql-syntax" spellcheck="false">bin/logstash -r
+</pre><p>在终端随意输入字符(比如<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">aaa</code>)后回车，会看到屏幕输出了类似下面的内容，代表运行成功了。</p><pre class="ql-syntax" spellcheck="false">{
+    "@timestamp" =&gt; 2018-12-06T14:43:50.310Z,
+    "@version" =&gt; "1",
+    "message" =&gt; "aaa",
+    "host" =&gt; "rockybean-MacBook-Pro.local"
+}
+</pre><p>我们再回头看下这个配置，<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">upstream</code>output 使用了名为&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">pipeline</code>&nbsp;的 plugin，然后&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">send_to</code>的输出对象<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">test_output</code>是在&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">downstream</code>的&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">input pipeline plugin</code>&nbsp;中定义的。通过这个唯一的<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">address</code>(虚拟地址)就能够把不同的&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">pipeline</code><span style="background-color: rgb(255, 0, 0);">&nbsp;</span>连接在一起组成一个更长的<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">pipeline</code>来处理数据。类似下图所示：</p><p>&nbsp;</p><p>当数据由&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">upstream</code>传递给&nbsp;<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">downstream</code>时会进行一个复制操作，这也意味着在这两个 pipeline 中的数据是完全独立的，互不影响。有一点要注意的是：数据的复制会增加额外的性能开销，比如会加大 JVM Heap 的使用。</p><h2>2. 使用场景</h2><h3>2.1 Distributor Pattern 分发者模式</h3><p>在一个 pipeline 处理输入，然后根据不同的数据类型再分发到对应的 Pipeline 去处理。这种模式的好处在于统一输入端口，隔离不同类型的处理配置文件，减少由于配置文件混合在一起带来的维护成本。大家可以想一想如果不用这种<code style="color: rgb(232, 62, 140); background-color: rgb(246, 246, 246);">Pipeline-to-Pipeline</code>的方式，我们如果轻松做到一个端口处理多个来源的数据呢？</p><p>这种模式的参考配置如下所示：</p><p><span style="color: rgb(73, 73, 73);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><pre class="ql-syntax" spellcheck="false"># config/pipelines.yml
+- pipeline.id: beats-server
+  config.string: |
+    input { beats { port =&gt; 5044 } }
+    output {
+        if [type] == apache {
+          pipeline { send_to =&gt; weblogs }
+        } else if [type] == system {
+          pipeline { send_to =&gt; syslog }
+        } else {
+          pipeline { send_to =&gt; fallback }
+        }
+    }
+- pipeline.id: weblog-processing
+  config.string: |
+    input { pipeline { address =&gt; weblogs } }
+    filter {
+       # Weblog filter statements here...
+    }
+    output {
+      elasticsearch { hosts =&gt; [es_cluster_a_host] }
+    }
+- pipeline.id: syslog-processing
+  config.string: |
+    input { pipeline { address =&gt; syslog } }
+    filter {
+       # Syslog filter statements here...
+    }
+    output {
+      elasticsearch { hosts =&gt; [es_cluster_b_host] }
+    }
+- pipeline.id: fallback-processing
+    config.string: |
+    input { pipeline { address =&gt; fallback } }
+    output { elasticsearch { hosts =&gt; [es_cluster_b_host] } }
+</pre><p><span style="color: rgb(73, 73, 73);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><h3>2.2 Output Isolator Pattern 输出隔离模式</h3><p>虽然 Logstash 的一个 pipeline 可以配置多个 output，但是这多个 output 会相依为命，一旦某一个 output 出问题，会导致另一个 output 也无法接收新数据。而通过这种模式可以完美解决这个问题。其运行方式如下图所示：</p><p><img src="https://ws1.sinaimg.cn/large/6d3e3053gy1fxxfvj14mhj20ne0mi78p.jpg"></p><p>通过输出到两个独立的 pipeline，解除相互之间的影响，比如 http service 出问题的时候，es 依然可以正常接收数据，而且两个 pipeline 可以配置独立的队列来保障数据的完备性，其配置如下所示：</p><p><span style="color: rgb(73, 73, 73);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><pre class="ql-syntax" spellcheck="false"># config/pipelines.yml
+- pipeline.id: intake
+  queue.type: persisted
+  config.string: |
+    input { beats { port =&gt; 5044 } }
+    output { pipeline { send_to =&gt; [es, http] } }
+- pipeline.id: buffered-es
+  queue.type: persisted
+  config.string: |
+    input { pipeline { address =&gt; es } }
+    output { elasticsearch { } }
+- pipeline.id: buffered-http
+  queue.type: persisted
+  config.string: |
+    input { pipeline { address =&gt; http } }
+    output { http { } }
+</pre><p><span style="color: rgb(73, 73, 73);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><h3>2.3 Forked Path Pattern 克隆路径模式</h3><p>这个模式类似 Output Isolator Pattern，只是在不同的 output pipeline 中可以配置不同的 filter 来完成各自输出的数据处理需求，这里就不展开讲了，可以参考如下的配置，其中不同 output pipeline 的 filter 是不同的，比如 partner 这个 pipeline 去掉了一些敏感数据：</p><p><span style="color: rgb(73, 73, 73);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><pre class="ql-syntax" spellcheck="false"># config/pipelines.yml
+- pipeline.id: intake
+  queue.type: persisted
+  config.string: |
+    input { beats { port =&gt; 5044 } }
+    output { pipeline { send_to =&gt; ["internal-es", "partner-s3"] } }
+- pipeline.id: buffered-es
+  queue.type: persisted
+  config.string: |
+    input { pipeline { address =&gt; "internal-es" } }
+    # Index the full event
+    output { elasticsearch { } }
+- pipeline.id: partner
+  queue.type: persisted
+  config.string: |
+    input { pipeline { address =&gt; "partner-s3" } }
+    filter {
+      # Remove the sensitive data
+      mutate { remove_field =&gt; 'sensitive-data' }
+    }
+    output { s3 { } } # Output to partner's bucket
+</pre><p><span style="color: rgb(73, 73, 73);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><h3>2.4 Collector Pattern 收集者模式</h3><p>从名字可以看出，该模式是将所有 Pipeline 汇集于一处的处理模式，如下图所示：</p><p><img src="https://ws1.sinaimg.cn/large/6d3e3053gy1fxxg8e2ilyj20kg0lc41y.jpg"></p><p>其配置参考如下：</p><p><span style="color: rgb(73, 73, 73);"><img src="https://common.cnblogs.com/images/copycode.gif" alt="复制代码"></span></p><pre class="ql-syntax" spellcheck="false"># config/pipelines.yml
+- pipeline.id: beats
+  config.string: |
+    input { beats { port =&gt; 5044 } }
+    output { pipeline { send_to =&gt; [commonOut] } }
+- pipeline.id: kafka
+  config.string: |
+    input { kafka { ... } }
+    output { pipeline { send_to =&gt; [commonOut] } }
+- pipeline.id: partner
+  # This common pipeline enforces the same logic whether data comes from Kafka or Beats
+  config.string: |
+    input { pipeline { address =&gt; commonOut } }
+    filter {
+      # Always remove sensitive data from all input sources
+      mutate { remove_field =&gt; 'sensitive-data' }
+    }
+    output { elasticsearch { } }
+</pre><p><br></p>
