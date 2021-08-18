@@ -1,0 +1,8 @@
+<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-885d3914-a31b-4ece-9816-bcd4022d2e22"></attachment><p>ES数据库发现磁盘将要写满之后，会尝试将所有的index设置index.blocks.read_only_allow_delete为true，会导致数据无法写入。</p><p>可以通过以下命令将所有的index配置改为false，来恢复。</p><pre class="ql-syntax" spellcheck="false">curl -XPUT -H "Content-Type: application/json" \
+   http://localhost:9200/_all/_settings \
+     -d '{"index.blocks.read_only_allow_delete": false}'
+
+</pre><p><br></p><p>或者在kibana控制台的运维工具里面执行</p><pre class="ql-syntax" spellcheck="false">PUT /_all/_settings
+{"index.blocks.read_only_allow_delete": false}
+
+</pre><p>引自：https://stackoverflow.com/questions/48155774/elasticsearch-read-only-allow-delete-auto-setting</p><p><br></p>
