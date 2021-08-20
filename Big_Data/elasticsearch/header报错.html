@@ -1,0 +1,21 @@
+<p>使用elasticsearch-6.1.2时，curl与head插件都出现不能查询数据的异常，具体原因如下
+curl -XGET http://localhost:9200/tmdb/_search?pretty -d ' {"query": {"match_all": ""}}'
+{
+"error" : "Content-Type header [application/x-www-form-urlencoded] is not supported",
+"status" : 406
+}
+
+此原因时由于ES增加了安全机制，&nbsp;
+进行严格的内容类型检查，严格检查内容类型也可以作为防止跨站点请求伪造攻击的一层保护。&nbsp;
+官网解释
+Strict checking of content-type is also useful as a layer of protection against Cross Site Request Forgery attacks.
+Because the Elasticsearch REST API uses simple HTTP requests, what’s easy to do with curl, is often easy to do with your web browser. If your internal network allows it, you can point your favourite browser at the /_cluster/settings endpoint on one of your Elasticsearch nodes and see the settings for your cluster.
+Unfortunately, if an attacker has the right knowledge about your internal network and Elasticsearch cluster, they can craft a malicious webpage that would use that same technique to perform unwanted updates to your cluster. Web browsers implement a number of security policies that help protect from such attacks, and part of that protection is to place limits on the content-types that may be used when sending data to remote servers.
+I mentioned earlier that you can enable strict content-type checking in recent releases of Elasticsearch 5 by enabling the http.content_type.required configuration option. Given the security reasons mentioned above, you should consider whether that is something that would be of value to you right now.
+If you’re deploying a brand new Elasticsearch cluster, it’s probably a good idea to require strict content-types from the start. It will be one less thing to worry about when you do upgrade to 6.x, and it gives you an added layer of protection against Cross Site Request Forgery attacks.
+If you have an existing Elasticsearch installation, then turning on that setting may be a little trickier - you need to know that all of your clients are sending the correct content-type. But if you can tackle that problem now that will get you one step closer to being able to migrate to Elasticsearch 6 when it is officially available.
+es5没有严格检查的，可以设置参数，以增加安全性
+http.content_type.required
+
+添加请求头即可正常查询
+curl -H "Content-Type: application/json" http://localhost:9200/tmdb/_search?pretty -d ' {"query": {"match_all": {}}}'</p><attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-a6b48444-b665-45d4-bac1-ff87cab91ac9"></attachment><p><br></p>
