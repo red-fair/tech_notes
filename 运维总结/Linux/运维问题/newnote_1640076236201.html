@@ -1,1 +1,11 @@
-<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-4e230730-5709-4375-b902-a68bbae82f8a"></attachment><p><br></p>
+<attachment contenteditable="false" data-atts="%5B%5D" data-aid=".atts-4e230730-5709-4375-b902-a68bbae82f8a"></attachment><h1>PyPI 镜像<a href="https://www.cnblogs.com/iathanasy/p/12896171.html#pypi-%E9%95%9C%E5%83%8F" target="_blank" style="color: var(--theme-color);">#</a></h1><h2>简介<a href="https://www.cnblogs.com/iathanasy/p/12896171.html#%E7%AE%80%E4%BB%8B" target="_blank" style="color: var(--theme-color);">#</a></h2><p>PyPI (Python Package Index) 是 Python 编程语言的软件存储库。开发者可以通过 PyPI 查找和安装由 Python 社区开发和共享的软件，也可以将自己开发的库上传至 PyPI 。</p><h2>Linux下更换pip源<a href="https://www.cnblogs.com/iathanasy/p/12896171.html#linux%E4%B8%8B%E6%9B%B4%E6%8D%A2pip%E6%BA%90" target="_blank" style="color: var(--theme-color);">#</a></h2><p>使用pip/pip3安装一些python包的时候下载速度非常慢，这时候我们可以动手更换python的pip/pip3源，在Linux系统中找到<code style="background-color: var(--code-bg-color) ; color: var(--text-color);">~/.pip/pip.conf</code>这个文件，如果没有这个文件自己创建一个同名文件，或者你的系统连<code style="background-color: var(--code-bg-color) ; color: var(--text-color);">~./pip</code>这个目录也没有，那就自己创建一个目录并且在目录中创建一个<code style="background-color: var(--code-bg-color) ; color: var(--text-color);">pip.conf</code>文件，并向该文件添加或修改成以下内容。</p><pre class="ql-syntax" spellcheck="false">[global]
+index-url = https://mirrors.aliyun.com/pypi/simple/
+
+[install]
+trusted-host=mirrors.aliyun.com
+</pre><h2>windows下更换pip源<a href="https://www.cnblogs.com/iathanasy/p/12896171.html#windows%E4%B8%8B%E6%9B%B4%E6%8D%A2pip%E6%BA%90" target="_blank" style="color: var(--theme-color);">#</a></h2><ol><li>文件管理器的地址栏输入<code style="background-color: var(--code-bg-color) ; color: var(--text-color);">%appdata%</code>回车进入当前用户主目录</li><li>在当前文件夹下新建文件夹<code style="background-color: var(--code-bg-color) ; color: var(--text-color);">pip</code></li><li>在pip文件夹下新建文件<code style="background-color: var(--code-bg-color) ; color: var(--text-color);">pip.ini</code>文件</li><li>在<code style="background-color: var(--code-bg-color) ; color: var(--text-color);">pip.ini</code>文件中输入以下内容</li></ol><pre class="ql-syntax" spellcheck="false">[global]
+index-url = https://mirrors.aliyun.com/pypi/simple/
+
+[install]
+trusted-host=mirrors.aliyun.com
+</pre><p><br></p>
